@@ -1,14 +1,15 @@
-import 'dart:convert';
+import '../data/gif_repository.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:http/http.dart' as http;
 import 'package:share/share.dart';
 import 'package:transparent_image/transparent_image.dart';
 
 import 'gif_page.dart';
 
 class HomePage extends StatefulWidget {
+  final GifRepository? repository;
+  const HomePage({super.key, this.repository});
   @override
   _HomePageState createState() => _HomePageState();
 }
@@ -26,18 +27,14 @@ class _HomePageState extends State<HomePage> {
 
   int _offset = 0; //procurando outros gifs
 
-  //requisiçao dos gifs
-  Future<Map> _getGifs() async {
-    http.Response response;
+  late final GifRepository _repository = widget.repository ?? GifRepository();
 
-    const key=String.fromEnvironment('GIPHY_API_KEY');
-    if (key.isEmpty) throw StateError('Configure GIPHY_API_KEY.');
-    final uri=Uri.https('api.giphy.com', _search == null ? '/v1/gifs/trending' : '/v1/gifs/search',
-      {'api_key':key,'limit':'19','rating':'g',if(_search!=null) 'q':_search!,
-       if(_search!=null) 'offset':'$_offset','lang':'pt'});
-    response=await http.get(uri);
-    if(response.statusCode!=200) throw StateError('Falha ao consultar GIFs.');
-    return json.decode(response.body) as Map;
+  Future<Map> _getGifs() => _repository.fetch(search: _search, offset: _offset);
+
+  @override
+  void dispose() {
+    if (widget.repository == null) _repository.close();
+    super.dispose();
   }
 
   @override
@@ -48,7 +45,8 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Colors.black,
         title: Image.network(
             "https://developers.giphy.com/static/img/dev-logo-lg.gif",
-            errorBuilder: (context, error, stack) => const Text("GIPHY")), //colocando uma imagem
+            errorBuilder: (context, error, stack) =>
+                const Text("GIPHY")), //colocando uma imagem
         centerTitle: true,
       ),
       backgroundColor: Colors.black,
@@ -96,7 +94,9 @@ class _HomePageState extends State<HomePage> {
                   );
                 default:
                   if (snapshot.hasError)
-                    return const Center(child: Text('Não foi possível carregar os GIFs.', style: TextStyle(color: Colors.white)));
+                    return const Center(
+                        child: Text('Não foi possível carregar os GIFs.',
+                            style: TextStyle(color: Colors.white)));
                   else
                     return _createGifTable(context, snapshot);
               }
@@ -139,7 +139,8 @@ class _HomePageState extends State<HomePage> {
             //poder clicar na imagem
             child: FadeInImage.memoryNetwork(
               placeholder: kTransparentImage, //image transparente
-              image:  snapshot.data["data"][index]["images"]["fixed_height"]["url"],
+              image: snapshot.data["data"][index]["images"]["fixed_height"]
+                  ["url"],
               height: 300.0, //altura
               fit: BoxFit.cover,
             ),
@@ -148,11 +149,13 @@ class _HomePageState extends State<HomePage> {
               Navigator.push(
                   context,
                   /*rota */
-                  MaterialPageRoute(builder: (context) => GifPage(snapshot.data["data"][index]))
-                );
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          GifPage(snapshot.data["data"][index])));
             },
-            onLongPress: (){
-              Share.share(snapshot.data["data"][index]["images"]["fixed_height"]["url"]);//ao precisar no gif ele compartilhar
+            onLongPress: () {
+              Share.share(snapshot.data["data"][index]["images"]["fixed_height"]
+                  ["url"]); //ao precisar no gif ele compartilhar
             },
           );
         } else {
@@ -176,7 +179,7 @@ class _HomePageState extends State<HomePage> {
               onTap: () {
                 setState(() {
                   _offset += 19;
-                    _gifs = _getGifs(); //pegar os proximos 19 itens
+                  _gifs = _getGifs(); //pegar os proximos 19 itens
                 });
               },
             ),
