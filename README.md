@@ -1,11 +1,28 @@
-# Buscador de GIFs
+# Buscador de GIFs — Giphy
 
-Busca, visualização e compartilhamento de GIFs da Giphy.
+## Descrição
 
-## Stack e organização
+Aplicativo Flutter para visualizar GIFs em destaque, pesquisar no Giphy, carregar mais resultados e compartilhar GIFs. O acesso ao serviço exige uma chave da API Giphy.
+
+## Stack e bibliotecas
+
 Flutter/Dart, http, share e transparent_image.
 
-Repositório da feature GIFs recebe HTTP e chave por injeção. A tela cuida de estado visual e chama o repositório; erros HTTP e formato são tratados fora do widget. Estado local continua adequado ao fluxo simples.
+Dependências e versões declaradas: [pubspec.yaml](pubspec.yaml).
+
+## Funcionalidades
+
+- GIFs em destaque.
+- Busca e paginação.
+- Detalhes e compartilhamento.
+
+## Licença
+
+Não há uma licença de distribuição definida para este repositório. Nenhuma licença MIT, Apache ou equivalente é concedida por este README. As atribuições e os direitos dos materiais de terceiros permanecem preservados.
+
+## Validação e limites
+
+Configuração ausente, query codificada, paginação e respostas inválidas. Compartilhamento e rede real exigem plataforma alvo.
 
 ## Executar
 Use a versão de Flutter registrada em `.github/workflows/ci.yml`.
@@ -25,17 +42,6 @@ A CI verifica erros de análise e os testes. Avisos e sugestões continuam visí
 
 ## Contribuir
 Abra uma branch por alteração, descreva o comportamento esperado e inclua testes para regras ou regressões. Mantenha credenciais e arquivos gerados fora do Git.
-
-## Licença
-Não há licença de distribuição definida neste repositório.
-
-
-## Funcionalidades
-
-- GIFs em destaque.
-- busca e paginação.
-- detalhes e compartilhamento.
-
 
 ## Organização e manutenção
 
