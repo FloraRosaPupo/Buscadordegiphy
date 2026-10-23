@@ -1,46 +1,40 @@
-import 'dart:convert';
+import '../data/gif_repository.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:http/http.dart' as http;
 import 'package:share/share.dart';
 import 'package:transparent_image/transparent_image.dart';
 
 import 'gif_page.dart';
 
 class HomePage extends StatefulWidget {
+  final GifRepository? repository;
+  const HomePage({super.key, this.repository});
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  String _search; //pesquisa
+  String? _search; //pesquisa
+
+  late Future<Map> _gifs;
+
+  @override
+  void initState() {
+    super.initState();
+    _gifs = _getGifs();
+  }
 
   int _offset = 0; //procurando outros gifs
 
-  //requisiçao dos gifs
-  Future<Map> _getGifs() async {
-    http.Response response;
+  late final GifRepository _repository = widget.repository ?? GifRepository();
 
-    if (_search == null) {
-      response = await http.get(
-          "https://api.giphy.com/v1/gifs/trending?api_key=wKadgpFiGSpORrJXEdxcV4CSXZ9BQvO1&limit=19&rating=g"); //melhores gifs
-    } else {
-      response = await http.get(
-          //gifs pesquisados
-          "https://api.giphy.com/v1/gifs/search?api_key=wKadgpFiGSpORrJXEdxcV4CSXZ9BQvO1&q=$_search&limit=19&offset=$_offset&rating=g&lang=pt");
-    }
+  Future<Map> _getGifs() => _repository.fetch(search: _search, offset: _offset);
 
-    return json.decode(response.body);
-
-    @override
-    void initState() {
-      super.initState();
-
-      _getGifs().then((map) {
-        print(map);
-      });
-    }
+  @override
+  void dispose() {
+    if (widget.repository == null) _repository.close();
+    super.dispose();
   }
 
   @override
@@ -50,7 +44,9 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: Image.network(
-            "https://developers.giphy.com/static/img/dev-logo-lg.gif"), //colocando uma imagem
+            "https://developers.giphy.com/static/img/dev-logo-lg.gif",
+            errorBuilder: (context, error, stack) =>
+                const Text("GIPHY")), //colocando uma imagem
         centerTitle: true,
       ),
       backgroundColor: Colors.black,
@@ -70,6 +66,7 @@ class _HomePageState extends State<HomePage> {
                 setState(() {
                   _search = text;
                   _offset = 0;
+                  _gifs = _getGifs();
                 });
               }, //recebe o texto q ta no pesquise aqui
             ),
@@ -77,7 +74,7 @@ class _HomePageState extends State<HomePage> {
           Expanded(
               child: FutureBuilder(
             //carregando os dados
-            future: _getGifs(),
+            future: _gifs,
 
             builder: (context, snapshot) {
               switch (snapshot.connectionState) {
@@ -97,7 +94,9 @@ class _HomePageState extends State<HomePage> {
                   );
                 default:
                   if (snapshot.hasError)
-                    return Container();
+                    return const Center(
+                        child: Text('Não foi possível carregar os GIFs.',
+                            style: TextStyle(color: Colors.white)));
                   else
                     return _createGifTable(context, snapshot);
               }
@@ -140,7 +139,8 @@ class _HomePageState extends State<HomePage> {
             //poder clicar na imagem
             child: FadeInImage.memoryNetwork(
               placeholder: kTransparentImage, //image transparente
-              image:  snapshot.data["data"][index]["images"]["fixed_height"]["url"],
+              image: snapshot.data["data"][index]["images"]["fixed_height"]
+                  ["url"],
               height: 300.0, //altura
               fit: BoxFit.cover,
             ),
@@ -149,11 +149,13 @@ class _HomePageState extends State<HomePage> {
               Navigator.push(
                   context,
                   /*rota */
-                  MaterialPageRoute(builder: (context) => GifPage(snapshot.data["data"][index]))
-                );
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          GifPage(snapshot.data["data"][index])));
             },
-            onLongPress: (){
-              Share.share(snapshot.data["data"][index]["images"]["fixed_height"]["url"]);//ao precisar no gif ele compartilhar
+            onLongPress: () {
+              Share.share(snapshot.data["data"][index]["images"]["fixed_height"]
+                  ["url"]); //ao precisar no gif ele compartilhar
             },
           );
         } else {
@@ -176,7 +178,8 @@ class _HomePageState extends State<HomePage> {
               ),
               onTap: () {
                 setState(() {
-                  _offset += 19; //pegar os proximos 19 itens
+                  _offset += 19;
+                  _gifs = _getGifs(); //pegar os proximos 19 itens
                 });
               },
             ),
